@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="card">
+
+    <div class="toolbar">
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Search..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+        aria-label="Buscar productos"
+      />
+      <button class="btn btn--primary" (click)="navigateToAdd()">Agregar</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="table" aria-label="Listado de productos financieros">
+        <thead>
+          <tr>
+            <th>Logo</th>
+            <th>Nombre del producto</th>
+            <th>
+              Descripción
+              <span class="info-icon" title="Descripción del producto">ℹ</span>
+            </th>
+            <th>
+              Fecha de liberación
+              <span class="info-icon" title="Fecha de lanzamiento al mercado">ℹ</span>
+            </th>
+            <th>
+              Fecha de reestructuración
+              <span class="info-icon" title="Un año después de la liberación">ℹ</span>
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading()) {
+            <app-skeleton-loader [rows]="5" />
+          } @else if (error()) {
+            <tr>
+              <td colspan="6" class="state-cell state-cell--error">
+                {{ error() }}
+              </td>
+            </tr>
+          } @else if (paginatedProducts().length === 0) {
+            <tr>
+              <td colspan="6" class="state-cell">
+                No se encontraron productos.
+              </td>
+            </tr>
+          } @else {
+            @for (product of paginatedProducts(); track product.id) {
+              <tr class="table-row">
+                <td>
+                  <img
+                    class="product-logo"
+                    [src]="product.logo"
+                    [alt]="product.name"
+                  />
+                </td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.description }}</td>
+                <td>{{ formatDate(product.date_release) }}</td>
+                <td>{{ formatDate(product.date_revision) }}</td>
+                <td class="action-cell">
+                  <div class="menu-wrapper">
+                    <button
+                      class="menu-trigger"
+                      (click)="openMenu(product.id, $event)"
+                      aria-label="Opciones del producto"
+                    >
+                      ⋮
+                    </button>
+                    @if (activeMenuId() === product.id) {
+                      <div
+                        class="dropdown"
+                        role="menu"
+                        [style.top.px]="menuPosition().top"
+                        [style.right.px]="menuPosition().right"
+                      >
+                        <button
+                          class="dropdown__item"
+                          (click)="navigateToEdit(product)"
+                          role="menuitem"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="dropdown__item dropdown__item--danger"
+                          (click)="openDeleteModal(product)"
+                          role="menuitem"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <span class="result-count">{{ resultCount() }} {{ resultCount() === 1 ? 'Resultado' : 'Resultados' }}</span>
+      <select
+        class="page-size-select"
+        [value]="pageSize()"
+        (change)="onPageSizeChange($event)"
+        aria-label="Registros por página"
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+
+  </div>
+</div>
+
+@if (deleteTarget()) {
+  <div class="modal-backdrop" (click)="closeDeleteModal()">
+    <div
+      class="modal"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <p id="modal-title" class="modal__text">
+        ¿Estas seguro de eliminar el producto
+        <strong>{{ deleteTarget()!.name }}</strong>?
+      </p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary modal__btn" (click)="closeDeleteModal()">
+          Cancelar
+        </button>
+        <button class="btn btn--primary modal__btn" (click)="confirmDelete()">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+}

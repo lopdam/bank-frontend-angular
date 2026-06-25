@@ -1,0 +1,130 @@
+<div class="page">
+  <div class="card">
+    <h2 class="form-title">{{ isEditMode ? 'Editar Producto' : 'Formulario de Registro' }}</h2>
+
+    @if (submitError) {
+      <div class="alert alert--error" role="alert">{{ submitError }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-grid">
+
+        <div class="field">
+          <label class="label" for="id">ID</label>
+          <input
+            id="id"
+            class="input"
+            [class.input--error]="hasError('id')"
+            [class.input--disabled]="isEditMode"
+            formControlName="id"
+            type="text"
+            maxlength="10"
+          />
+          @if (form.get('id')?.pending) {
+            <span class="hint">Verificando ID...</span>
+          } @else if (hasError('id', 'required')) {
+            <span class="field-error">ID es requerido</span>
+          } @else if (hasError('id', 'minlength')) {
+            <span class="field-error">Mínimo 3 caracteres</span>
+          } @else if (hasError('id', 'maxlength')) {
+            <span class="field-error">Máximo 10 caracteres</span>
+          } @else if (hasError('id', 'idExists')) {
+            <span class="field-error">ID no válido!</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label" for="name">Nombre</label>
+          <input
+            id="name"
+            class="input"
+            [class.input--error]="hasError('name')"
+            formControlName="name"
+            type="text"
+            maxlength="100"
+          />
+          @if (hasError('name', 'required')) {
+            <span class="field-error">Nombre es requerido</span>
+          } @else if (hasError('name', 'minlength')) {
+            <span class="field-error">Mínimo 5 caracteres</span>
+          }
+        </div>
+
+        <div class="field field--full">
+          <label class="label" for="description">Descripción</label>
+          <textarea
+            id="description"
+            class="input input--textarea"
+            [class.input--error]="hasError('description')"
+            formControlName="description"
+            rows="3"
+            maxlength="200"
+          ></textarea>
+          @if (hasError('description', 'required')) {
+            <span class="field-error">Este campo es requerido</span>
+          } @else if (hasError('description', 'minlength')) {
+            <span class="field-error">Mínimo 10 caracteres</span>
+          }
+        </div>
+
+        <div class="field field--full">
+          <label class="label" for="logo">Logo</label>
+          <input
+            id="logo"
+            class="input"
+            [class.input--error]="hasError('logo')"
+            formControlName="logo"
+            type="text"
+            placeholder="URL de la imagen"
+          />
+          @if (hasError('logo', 'required')) {
+            <span class="field-error">Este campo es requerido</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label" for="date_release">Fecha Liberación</label>
+          <input
+            id="date_release"
+            class="input"
+            [class.input--error]="hasError('date_release')"
+            formControlName="date_release"
+            type="date"
+          />
+          @if (hasError('date_release', 'required')) {
+            <span class="field-error">Fecha es requerida</span>
+          } @else if (hasError('date_release', 'pastDate')) {
+            <span class="field-error">La fecha debe ser mayor o igual a hoy</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label" for="date_revision">Fecha Revisión</label>
+          <input
+            id="date_revision"
+            class="input input--disabled"
+            formControlName="date_revision"
+            type="date"
+            readonly
+          />
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        @if (!isEditMode) {
+          <button type="button" class="btn btn--secondary" (click)="reset()">
+            Reiniciar
+          </button>
+        }
+        <button
+          type="submit"
+          class="btn btn--primary"
+          [disabled]="form.invalid || form.pending"
+        >
+          {{ isEditMode ? 'Guardar' : 'Enviar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

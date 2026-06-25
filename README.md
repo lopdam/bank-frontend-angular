@@ -1,59 +1,166 @@
-# BankFrontendAngular
+# Bank Frontend Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.4.
+Financial products management UI built with Angular 22. Connects to a local Node/Express backend that exposes a RESTful API for CRUD operations on financial products.
 
-## Development server
+---
 
-To start a local development server, run:
+## Tech stack
 
-```bash
-ng serve
+| Concern | Choice |
+|---------|--------|
+| Framework | Angular 22 (standalone components) |
+| Language | TypeScript 6 |
+| Rendering | SSR via `@angular/ssr` + Express |
+| State | Angular signals (`signal`, `computed`) |
+| Forms | `ReactiveFormsModule` |
+| HTTP | `HttpClient` (`provideHttpClient`) |
+| Routing | Lazy-loaded standalone components |
+| Styles | Custom CSS (no framework) |
+| Tests | Vitest via Angular test runner |
+| Package manager | Yarn |
+
+---
+
+## Architecture
+
+Clean Architecture layers adapted for Angular, following the MVVM pattern:
+
+```
+src/app/
+├── core/
+│   └── constants/
+│       └── api.constants.ts          # API base URL
+├── features/
+│   └── products/
+│       ├── domain/
+│       │   ├── product.model.ts      # Pure TypeScript interfaces
+│       │   └── product.repository.ts # Abstract class used as DI token
+│       ├── data/
+│       │   └── product.service.ts    # HttpClient implementation of repository
+│       ├── validators/
+│       │   └── product-id.validator.ts  # Async ID validator + release date validator
+│       └── presentation/
+│           ├── pages/
+│           │   ├── product-list/     # F1, F2, F3, F5, F6
+│           │   └── product-form/     # F4, F5 (shared add/edit form)
+│           └── components/
+│               └── skeleton-loader/  # Shimmer loading rows
+└── shared/
+    └── components/
+        └── header/                   # Global bank header
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+**ViewModel pattern**: Component classes hold `signal()` for mutable state and `computed()` for derived state. No external state management library.
 
-## Code scaffolding
+**Repository pattern**: `IProductRepository` (abstract class) is registered as the DI token in `app.config.ts`. `ProductService` is the concrete implementation. Components inject `IProductRepository` and never reference `ProductService` directly, making the data layer swappable.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
+
+## Features
+
+| ID | Description |
+|----|-------------|
+| F1 | List all financial products loaded from the API, with skeleton loader during fetch |
+| F2 | Real-time search filtering by product name or description |
+| F3 | Result count display and page size selector (5 / 10 / 20 rows) |
+| F4 | Add product form with per-field validation (required, length, async ID uniqueness, release date >= today, auto-computed revision date) |
+| F5 | Edit product via per-row context menu dropdown; ID field is disabled in edit mode |
+| F6 | Delete product via confirmation modal triggered from the context menu |
+
+---
+
+## Backend dependency
+
+The app expects a local Express backend running on port 3002:
 
 ```bash
-ng generate component component-name
+cd ../repo-interview-main
+npm install
+npm run start:dev
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+The backend requires the `cors` package. If it is missing, install it before starting:
 
 ```bash
-ng generate --help
+npm install cors
 ```
 
-## Building
+Base URL: `http://localhost:3002/bp`
 
-To build the project run:
+Endpoints used:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | /products | Load all products |
+| POST | /products | Create product |
+| PUT | /products/:id | Update product |
+| DELETE | /products/:id | Delete product |
+| GET | /products/verification/:id | Async ID uniqueness check |
+
+---
+
+## Local development
 
 ```bash
-ng build
+yarn install
+yarn start
+# Opens at http://localhost:4200
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The app redirects `/` to `/products` (product list). Routes:
 
-## Running unit tests
+| Path | Component |
+|------|-----------|
+| /products | ProductListComponent |
+| /products/add | ProductFormComponent (add mode) |
+| /products/edit/:id | ProductFormComponent (edit mode) |
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+---
+
+## Form validation rules
+
+| Field | Rules |
+|-------|-------|
+| ID | Required, 3–10 characters, must not already exist (async check against API) |
+| Name | Required, 5–100 characters |
+| Description | Required, 10–200 characters |
+| Logo | Required (URL string) |
+| Release date | Required, must be today or a future date |
+| Revision date | Disabled, auto-computed as exactly one year after release date |
+
+---
+
+## Unit tests
 
 ```bash
 ng test
+# or for a single run with coverage report:
+ng test --watch=false
 ```
 
-## Running end-to-end tests
+Coverage is enabled by default via `@vitest/coverage-v8`. A summary is printed to the terminal after each run.
 
-For end-to-end (e2e) testing, run:
+Test files are co-located with their source files as `*.spec.ts`.
+
+| Spec file | What it covers |
+|-----------|----------------|
+| `product.service.spec.ts` | All HTTP methods, response mapping |
+| `product-id.validator.spec.ts` | Async ID validator (taken/available/empty), release date validator |
+| `product-list.component.spec.ts` | Load, filter, paginate, search, delete, error states |
+| `product-form.component.spec.ts` | Add mode, edit mode, date auto-fill, validation, reset |
+| `app.spec.ts` | Root component renders header and router outlet |
+
+---
+
+## Build
 
 ```bash
-ng e2e
+yarn build
+# Output: dist/bank-frontend-angular/
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+SSR server entry: `src/server.ts` (Express). To run the production SSR build:
 
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```bash
+node dist/bank-frontend-angular/server/server.mjs
+```
